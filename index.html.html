@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bravida | NEK 400 Kalkulatoren Pro v8.0 (Final)</title>
+    
+    <link rel="manifest" href="/bravida-kalkulator/manifest.json">
+    
+    <meta name="theme-color" content="#005394"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        :root {
+            --bravida-blue: #005394; 
+            --bravida-blue-dark: #003E6B;
+            --bravida-green: #00A98F;
+            --text-primary: #29303a; 
+            --text-secondary: #555555;
+            --bg-body: #f8f8f8;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --validation-info-bg: #E6F4FF; --validation-info-border: #90CDF4; --validation-info-text: #2C5282;
+            --validation-error-bg: #FFF5F5; --validation-error-border: #FEB2B2; --validation-error-text: #9B2C2C;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-primary); }
+        .container { max-width: 960px; margin: 40px auto; padding: 1rem; }
+        .card { background-color: var(--bg-card); border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.06); border: 1px solid var(--border-color); padding: 24px; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+        .section-title { border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 24px; color: var(--text-primary); font-weight: 600; font-size: 1.125rem; }
+        .btn { padding: 12px 24px; border-radius: 4px; font-weight: 600; transition: background-color 0.2s ease-in-out; cursor: pointer; border: none; text-align: center; display: block; width: 100%; }
+        .btn-primary { background-color: var(--bravida-blue); color: white; }
+        .btn-primary:hover { background-color: var(--bravida-blue-dark); }
+        .btn-secondary { background-color: #EDF2F7; color: var(--text-secondary); padding: 10px 16px; border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background-color: #E2E8F0; }
+        .btn-success { background-color: var(--bravida-green); color: white; }
+        .btn-success:hover { background-color: #008772; }
+        .btn-danger { background-color: #FEF2F2; color: #DC2626; border-color: #FCA5A5; }
+        .btn-danger:hover { background-color: #FEE2E2; }
+        .table-header { background-color: #F7FAFC; font-weight: 600; color: #4A5568; }
+        .input-group label { font-weight: 500; color: var(--text-secondary); font-size: 0.875rem; }
+        .hidden { display: none; }
+        select, input[type=text], input[type=number] { border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; md:font-size: 0.875rem; padding: 0.5rem; width: 100%; }
+        .form-checkbox { color: var(--bravida-blue) !important; height: 1.25rem; width: 1.25rem; border-radius: 4px; }
+        .validation-message { padding: 1rem; border-radius: 0.375rem; border: 1px solid; }
+        .validation-message.info { background-color: var(--validation-info-bg); border-color: var(--validation-info-border); color: var(--validation-info-text); }
+        .validation-message.error { background-color: var(--validation-error-bg); border-color: var(--validation-error-border); color: var(--validation-error-text); }
+    </style>
+</head>
+<body class="bg-body">
+    <main class="container">
+        <div class="text-center my-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">NEK 400 Prosjektkalkulator Pro</h1>
+            <p class="text-center text-gray-500">Et internt verktøy for estimering av elektriske installasjoner. v8.0 (Final)</p>
+        </div>
+
+        <form id="calculationForm" class="space-y-6">
+            <div class="card">
+                <h2 class="section-title">1. Generelle Prosjektdata</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="input-group"><label for="networkType" class="block text-sm mb-1">Distribusjonsnett</label><select id="networkType" class="w-full"><option value="230IT">230V IT-nett</option><option value="400TN">400V TN-nett</option></select></div>
+                    <div class="input-group"><label for="mainFuse" class="block text-sm mb-1">Hovedsikring (A)</label><select id="mainFuse" class="w-full"><option value="40">40A</option><option value="50">50A</option><option value="63" selected>63A</option><option value="80">80A</option><option value="100">100A</option><option value="125">125A</option></select></div>
+                    <div class="input-group"><label for="installationType" class="block text-sm mb-1">Standard forlegning</label><select id="installationType" class="w-full"><option value="concealed" selected>Skjult forlegning</option><option value="open">Åpen forlegning</option></select></div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="flex items-center justify-center">
+                        <label for="newFuseBoxCheck" class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="newFuseBoxCheck" class="form-checkbox">
+                            <span class="ml-2 text-gray-700 font-medium">Inkluder nytt sikringsskap?</span>
+                        </label>
+                    </div>
+                </div>
+                 <div class="mt-6 text-center">
+                    <button type="button" id="editDataBtn" class="btn btn-secondary w-full md:w-auto">Rediger Priser og Tider</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">2. Definer Rom i Bygningen</h2>
+                <p class="text-gray-600 text-sm mb-4">Legg til hvert rom. For detaljert kontroll, kryss av for "Tilpass".</p>
+                <div id="roomsContainer" class="space-y-4"></div>
+                <button type="button" id="addRoomBtn" class="btn btn-secondary w-full py-3 mt-4">+ Legg til Rom</button>
+            </div>
+            
+             <div class="card">
+                <h2 class="section-title">3. Faktorer og Tillegg</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="input-group"><label for="simultaneityFactor" class="block text-sm mb-1">Samtidighetsfaktor</label><input type="number" id="simultaneityFactor" value="0.5" min="0.1" max="1.0" step="0.05" class="w-full" /></div>
+                    <div class="input-group"><label for="profitMargin" class="block text-sm mb-1">Profittmargin (%)</label><input type="number" id="profitMargin" value="25" min="0" step="1" class="w-full"></div>
+                    <div class="input-group col-span-1 md:col-span-2"><label for="serviceCarFixedCost" class="block text-sm mb-1">Fast kostnad Servicebil (NOK)</label><input type="number" id="serviceCarFixedCost" value="1500" min="0" step="100" class="w-full"></div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <h3 class="text-base font-medium text-gray-700 mb-2">Timepriser og Forbruk</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="input-group"><label for="elektrikerRate" class="block text-sm mb-1">Timepris Elektriker</label><input type="number" id="elektrikerRate" value="850" min="0" step="10" class="w-full"></div>
+                        <div class="input-group"><label for="serviceLeaderRate" class="block text-sm mb-1">Timepris Serviceleder</label><input type="number" id="serviceLeaderRate" value="1100" min="0" step="10" class="w-full"></div>
+                        <div class="input-group"><label for="elektrikerBasRate" class="block text-sm mb-1">Timepris Elektriker Bas</label><input type="number" id="elektrikerBasRate" value="950" min="0" step="10" class="w-full"></div>
+                        <div class="input-group"><label for="lærlingRate" class="block text-sm mb-1">Timepris Lærling</label><input type="number" id="lærlingRate" value="550" min="0" step="10" class="w-full"></div>
+                        <div class="input-group"><label for="serviceLeaderHours" class="block text-sm mb-1">Timer Serviceleder</label><input type="number" id="serviceLeaderHours" placeholder="0" min="0" step="0.5" class="w-full"></div>
+                        <div class="input-group"><label for="elektrikerBasHours" class="block text-sm mb-1">Timer Elektriker Bas</label><input type="number" id="elektrikerBasHours" placeholder="0" min="0" step="0.5" class="w-full"></div>
+                        <div class="input-group"><label for="lærlingHours" class="block text-sm mb-1">Timer Lærling</label><input type="number" id="lærlingHours" placeholder="0" min="0" step="0.5" class="w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">4. Prosjektlagring</h2>
+                <div class="input-group"><label for="projectName" class="block text-sm mb-1">Prosjektnavn</label><input type="text" id="projectName" class="w-full" placeholder="F.eks. Rørlegger-Jensen Bolig" value="Standardprosjekt"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"><button type="button" id="saveProjectBtn" class="btn btn-secondary">Lagre Prosjekt</button><button type="button" id="loadProjectBtn" class="btn btn-secondary">Last Prosjekt</button></div>
+                <div id="storageMessage" class="mt-4 text-sm"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full text-lg py-3">Kalkuler Prosjekt</button>
+        </form>
+
+        <div id="results" class="hidden mt-10 card">
+            <h2 class="section-title" style="border-color: var(--bravida-blue);">Resultater</h2>
+            <div id="validationMessages" class="mb-6 space-y-4"></div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-gray-700 p-4 bg-gray-50 rounded-md">
+                <p><strong>Nett-type:</strong><br><span id="resNetworkType" class="font-semibold"></span></p>
+                <p><strong>Hovedsikring:</strong><br><span id="resMainFuse" class="font-semibold"></span> A</p>
+                <p><strong>Samtidig Effekt:</strong><br><span id="resPowerDemand" class="font-semibold"></span> kW</p>
+                <p><strong>Antall Kurser:</strong><br><span id="resTotalCourses" class="font-semibold"></span></p>
+            </div>
+            
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 mt-8">Aggregert Materielliste</h3>
+                <div class="overflow-x-auto mb-6 rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200"><thead class="table-header"><tr><th class="px-4 py-3 text-left text-xs uppercase tracking-wider">Beskrivelse</th><th class="px-4 py-3 text-left text-xs uppercase tracking-wider">Antall</th><th class="px-4 py-3 text-left text-xs uppercase tracking-wider hidden md:table-cell">Enhet</th><th class="px-4 py-3 text-left text-xs uppercase tracking-wider hidden md:table-cell">Enhetspris</th><th class="px-4 py-3 text-left text-xs uppercase tracking-wider">Totalpris</th></tr></thead><tbody id="materialTableBody" class="bg-white divide-y divide-gray-200 text-sm"></tbody><tfoot class="table-header"><tr><th colspan="2" class="px-4 py-3 text-right text-xs uppercase tracking-wider md:hidden">SUM</th><th colspan="3" class="px-4 py-3 text-right text-xs uppercase tracking-wider hidden md:table-cell">SUM MATERIELL</th><th id="resTotalMaterialCost" class="px-4 py-3 text-left text-sm font-semibold"></th></tr></tfoot></table>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 mt-8">Konsolidert Timeliste</h3>
+                <div class="overflow-x-auto mb-6 rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200"><thead class="table-header"><tr><th class="px-4 py-3 text-left text-xs uppercase tracking-wider">Operasjon</th><th class="px-4 py-3 text-left text-xs uppercase tracking-wider hidden md:table-cell">Mengde</th><th class="px-4 py-3 text-left text-xs uppercase tracking-wider hidden md:table-cell">Tid/enhet (t)</th><th class="px-4 py-3 text-left text-xs uppercase tracking-wider">Total timer</th></tr></thead><tbody id="laborTableBody" class="bg-white divide-y divide-gray-200 text-sm"></tbody><tfoot class="table-header"><tr><th class="px-4 py-3 text-right text-xs uppercase tracking-wider md:hidden">SUM</th><th colspan="2" class="px-4 py-3 text-right text-xs uppercase tracking-wider hidden md:table-cell">SUM TIMER ELEKTRIKER</th><th id="resTotalLaborHours" class="px-4 py-3 text-left text-sm font-semibold"></th></tr></tfoot></table>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-700 mb-4 mt-8">Prosjektkostnad</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-800 p-4 bg-gray-50 rounded-md">
+                <div>Materiellkostnad: <span id="resTotalMaterialCostBreakdown" class="float-right font-semibold"></span></div>
+                <div><span id="resServiceLeaderCostLabel"></span> <span id="resServiceLeaderCostBreakdown" class="float-right font-semibold"></span></div>
+                <div>Arbeid - Elektriker (beregnet): <span id="resElectricianCostBreakdown" class="float-right font-semibold"></span></div>
+                <div><span id="resBasCostLabel"></span> <span id="resBasCostBreakdown" class="float-right font-semibold"></span></div>
+                <div>Servicebil (Fast kostnad): <span id="resServiceCarCostBreakdown" class="float-right font-semibold"></span></div>
+                <div><span id="resLærlingCostLabel"></span> <span id="resLærlingCostBreakdown" class="float-right font-semibold"></span></div>
+                <div class="md:col-span-2 border-t mt-2 pt-2">Kostpris (før påslag): <span id="resCostPriceBeforeMargin" class="float-right font-bold"></span></div>
+                <div class="md:col-span-2 text-2xl font-bold mt-4">Total Estimert Prosjektkostnad: <span id="resGrandTotal" class="float-right" style="color: var(--bravida-blue);"></span></div>
+                <div id="resVatBreakdown" class="md:col-span-2 text-right text-gray-500 text-sm"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
+                <button type="button" id="generateQuoteBtn" class="btn btn-primary md:col-span-1">Generer Kundetilbud</button>
+                <button type="button" id="exportCsvBtn" class="btn btn-secondary">Eksporter Intern CSV</button>
+                <button type="button" id="exportPdfBtn" class="btn btn-secondary">Eksporter Intern PDF</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="dataModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <p class="text-2xl font-bold">Rediger Priser og Tider</p>
+                <div id="closeDataModalBtn" class="cursor-pointer z-50">
+                    <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 18 18"><path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"/></svg>
+                </div>
+            </div>
+            <div class="mt-3 max-h-[60vh] overflow-y-auto pr-2">
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Materialpriser (NOK)</h3>
+                    <div id="materialPricesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3"></div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Arbeidstider (timer)</h3>
+                    <div id="laborTimesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3"></div>
+                </div>
+            </div>
+            <div class="flex justify-between items-center pt-4 border-t mt-4">
+                 <button id="resetDataBtn" class="btn btn-secondary btn-danger">Tilbakestill til Standard</button>
+                 <button id="saveDataBtn" class="btn btn-primary !w-auto">Lagre Endringer</button>
+            </div>
+             <div id="dataSaveMessage" class="text-sm text-green-600 mt-2 text-right"></div>
+        </div>
+    </div>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    // SECTION 1: CONFIGURATION & DEFAULTS
+    const CONFIG_JSON_STRING = `{
+      "materialPrices": { "Boligskap 2-rader m/målerplass": 6682, "Jordfeilautomat 16A B (per kurs)": 499, "Ferdigtrukket K-rør 16mm 3G2.5 (per meter)": 23.99, "Kabel PR 2x2.5/2.5 (per meter)": 66.50, "Kabel PFXP 4G4mm²": 60, "Stikkontakt m/jord enkel (hvitevarer)": 129, "Stikkontakt m/jord dobbel (standard)": 199, "Stikkontakt m/jord enkel (standard)": 129, "Stikkontakt m/jord dobbel IP44": 229, "Bryter 1-polet": 119, "Nettverksuttak RJ45 (standard)": 149, "LED-strip pakke": 800, "Spotter under skap (3-pk)": 450, "Spotlight (standard)": 379, "Dimmer (standard)": 899, "Lyspunkt tak (standard)": 200, "Koblingsbokser/rør/klemmer (Prosjektbasis)": 1500, "Varmekabelmatte (per m2)": 400, "Termostat for varmekabel": 1690, "Gulvføler for varmekabel": 150, "Festeklammer (pk a 100 stk)": 89 },
+      "laborTimes": { "Montering/Utskifting av Sikringsskap": 5.0, "Montering jordfeilautomat": 0.3, "Trekking kabel (skjult, per meter)": 0.05, "Trekking kabel (åpen, per meter)": 0.03, "Trekking PFXP kabel": 0.06, "Montering stikkontakt/bryter": 0.3, "Montering lyspunkt": 0.5, "Montering nettverksuttak": 0.2, "Tilkobling hvitevarer/apparater": 0.4, "Tavlearbeid/kobling (Prosjektbasis)": 3.0, "Test og kontroll (Prosjektbasis)": 2.0, "Legging varmekabelmatte (per m2)": 0.2, "Montering termostat": 0.5, "Montering gulvføler": 0.2, "Montering dimmer": 0.3, "Montering spotlight": 0.2 },
+      "roomDefaults": { "kjokken": { "fixedLoad": 14200, "loadPerM2": 80, "courses": 6, "materials": [ { "desc": "Stikkontakt m/jord dobbel (standard)", "qty": 4 }, { "desc": "Kabel PFXP 4G4mm²", "qty": 10 }, { "desc": "Stikkontakt m/jord enkel (hvitevarer)", "qty": 5 } ], "labor": [ { "op": "Montering stikkontakt/bryter", "qty": 9 }, { "op": "Tilkobling hvitevarer/apparater", "qty": 5 }, { "op": "Trekking PFXP kabel", "qty": 10 } ] }, "stue": { "fixedLoad": 0, "loadPerM2": 50, "courses": 4, "materials": [ { "desc": "Stikkontakt m/jord dobbel (standard)", "qty": 8 } ], "labor": [{"op": "Montering stikkontakt/bryter", "qty": 8}] }, "soverom": { "fixedLoad": 0, "loadPerM2": 40, "courses": 2, "materials": [ { "desc": "Stikkontakt m/jord dobbel (standard)", "qty": 4 } ], "labor": [{"op": "Montering stikkontakt/bryter", "qty": 4}] }, "bad": { "fixedLoad": 2000, "loadPerM2": 150, "courses": 2, "materials": [ { "desc": "Stikkontakt m/jord enkel (standard)", "qty": 2 }, { "desc": "Stikkontakt m/jord dobbel (standard)", "qty": 1 } ], "labor": [ { "op": "Montering stikkontakt/bryter", "qty": 3 }, { "op": "Tilkobling hvitevarer/apparater", "qty": 2 } ] }, "gang": { "fixedLoad": 0, "loadPerM2": 20, "courses": 1, "materials": [{"desc": "Stikkontakt m/jord dobbel (standard)", "qty": 1 }], "labor": [{"op": "Montering stikkontakt/bryter", "qty": 1}] }, "vaskerom": { "fixedLoad": 4000, "loadPerM2": 50, "courses": 3, "materials": [ { "desc": "Stikkontakt m/jord enkel (standard)", "qty": 2 }, { "desc": "Stikkontakt m/jord dobbel (standard)", "qty": 1 } ], "labor": [ { "op": "Montering stikkontakt/bryter", "qty": 3 }, { "op": "Tilkobling hvitevarer/apparater", "qty": 2 } ] }, "garasje": { "fixedLoad": 0, "loadPerM2": 20, "courses": 2, "materials": [ { "desc": "Stikkontakt m/jord dobbel IP44", "qty": 2 } ], "labor": [{"op": "Montering stikkontakt/bryter", "qty": 2}] }, "uteomraade": { "fixedLoad": 0, "loadPerM2": 0, "courses": 1, "materials": [ { "desc": "Stikkontakt m/jord dobbel IP44", "qty": 1 } ], "labor": [{"op": "Montering stikkontakt/bryter", "qty": 1}] }, "kontor": { "fixedLoad": 0, "loadPerM2": 40, "courses": 2, "materials": [ { "desc": "Stikkontakt m/jord dobbel (standard)", "qty": 6 }, { "desc": "Nettverksuttak RJ45 (standard)", "qty": 2 } ], "labor": [ { "op": "Montering stikkontakt/bryter", "qty": 6 }, { "op": "Montering nettverksuttak", "qty": 2 } ] } }
+    }`;
+
+    const DEFAULT_CONFIG = JSON.parse(CONFIG_JSON_STRING);
+    const NEK400_I_REF = { '1.5': {'A1': 13.5, 'A2': 15.5, 'C': 17.5}, '2.5': {'A1': 18.0, 'A2': 21.0, 'C': 24.0}, '4': {'A1': 24.0, 'A2': 28.0, 'C': 32.0}, '6': {'A1': 31.0, 'A2': 36.0, 'C': 41.0} };
+    const NEK400_K_TEMP = { '20': 1.12, '25': 1.06, '30': 1.00, '35': 0.94, '40': 0.87 };
+    const NEK400_K_GRUPPE = { '1': 1.00, '2': 0.80, '3': 0.70, '4': 0.65, '5': 0.60, '6': 0.57, '7': 0.54, '8': 0.52, '9': 0.50 };
+    const CABLE_RESISTIVITY_CU = 0.0175;
+    const VOLTAGE_DROP_LIMIT = 4.0;
+    const ESTIMATED_CABLE_LENGTH_PER_COURSE = 15;
+    const VAT_FACTOR = 1.25;
+
+    let config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    let roomCounter = 0;
+    let lastCalculationResult = null;
+    
+    // DOM Element references
+    const calculationForm = document.getElementById('calculationForm');
+    const roomsContainer = document.getElementById('roomsContainer');
+    const addRoomBtn = document.getElementById('addRoomBtn');
+    const editDataBtn = document.getElementById('editDataBtn');
+    const dataModal = document.getElementById('dataModal');
+    const closeDataModalBtn = document.getElementById('closeDataModalBtn');
+    const saveDataBtn = document.getElementById('saveDataBtn');
+    const resetDataBtn = document.getElementById('resetDataBtn');
+    const materialPricesContainer = document.getElementById('materialPricesContainer');
+    const laborTimesContainer = document.getElementById('laborTimesContainer');
+    const resultsContainer = document.getElementById('results');
+
+    // SECTION 2: DATA HANDLING
+    function loadDataFromStorage() { try { const customPrices = localStorage.getItem('customMaterialPrices'); const customTimes = localStorage.getItem('customLaborTimes'); if (customPrices) config.materialPrices = { ...DEFAULT_CONFIG.materialPrices, ...JSON.parse(customPrices) }; if (customTimes) config.laborTimes = { ...DEFAULT_CONFIG.laborTimes, ...JSON.parse(customTimes) }; } catch (e) { console.error("Kunne ikke laste data fra localStorage:", e); config = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); } }
+    function populateDataModal() { materialPricesContainer.innerHTML = ''; laborTimesContainer.innerHTML = ''; const createInputRow = (key, value, type) => `<div class="flex items-center justify-between"><label for="${type}-${key}" class="text-sm text-gray-600">${key}</label><input type="number" step="0.01" value="${value}" data-key="${key}" id="${type}-${key}" class="w-24 text-right"></div>`; Object.keys(config.materialPrices).sort().forEach(key => materialPricesContainer.insertAdjacentHTML('beforeend', createInputRow(key, config.materialPrices[key], 'mat'))); Object.keys(config.laborTimes).sort().forEach(key => laborTimesContainer.insertAdjacentHTML('beforeend', createInputRow(key, config.laborTimes[key], 'lab'))); }
+    function saveDataFromModal() { materialPricesContainer.querySelectorAll('input').forEach(input => config.materialPrices[input.dataset.key] = parseFloat(input.value) || 0); laborTimesContainer.querySelectorAll('input').forEach(input => config.laborTimes[input.dataset.key] = parseFloat(input.value) || 0); localStorage.setItem('customMaterialPrices', JSON.stringify(config.materialPrices)); localStorage.setItem('customLaborTimes', JSON.stringify(config.laborTimes)); document.getElementById('dataSaveMessage').textContent = 'Endringer er lagret!'; setTimeout(() => { document.getElementById('dataSaveMessage').textContent = ''; dataModal.classList.add('hidden'); }, 1500); }
+    function resetDataToDefaults() { if (confirm('Sikker på at du vil tilbakestille?')) { localStorage.removeItem('customMaterialPrices'); localStorage.removeItem('customLaborTimes'); config = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); populateDataModal(); } }
+
+    // SECTION 3: UI LOGIC
+    function addRoomRow() {
+        roomCounter++;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mb-4';
+        wrapper.dataset.roomId = roomCounter;
+        wrapper.innerHTML = `
+            <div class="p-3 bg-gray-50 rounded-lg border">
+                <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                    <div class="w-full md:flex-1"><select class="room-type-select"><option value="">Velg romtype...</option><option value="kjokken">Kjøkken</option><option value="stue">Stue</option><option value="soverom">Soverom</option><option value="bad">Bad</option><option value="gang">Gang</option><option value="vaskerom">Vaskerom</option><option value="garasje">Garasje</option><option value="uteomraade">Uteområde</option><option value="kontor">Kontor</option></select></div>
+                    <div class="w-full md:w-48"><input type="number" placeholder="Areal (m²)" class="room-area-input" min="1" value="10"></div>
+                    <div class="w-full md:w-auto flex items-center justify-between gap-4"><label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"><input type="checkbox" class="customize-room-checkbox form-checkbox"> Tilpass</label><button type="button" class="remove-room-btn btn btn-secondary !p-2 text-sm whitespace-nowrap">Fjern</button></div>
+                </div>
+                <div class="kitchen-options hidden mt-4 pt-4 border-t border-gray-200">
+                    <div class="input-group">
+                        <label class="block text-sm mb-1 font-medium text-gray-600">Belysning under overskap</label>
+                        <select class="kitchen-lighting-select w-full"><option value="none" selected>Ingen</option><option value="led_strip">LED-strip pakke</option><option value="under_cabinet_spots">Spotter under skap</option></select>
+                    </div>
+                    <div class="kitchen-spot-quantity-wrapper hidden mt-2">
+                        <label class="block text-sm mb-1">Antall pakker med spotter (3-pk)</label>
+                        <input type="number" class="kitchen-spot-quantity-input w-full" value="2" min="1">
+                    </div>
+                </div>
+            </div>
+            <div class="hidden p-4 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-b-lg border-x border-b border-gray-200 custom-options">
+                <div>
+                    <h4 class="text-md font-semibold text-gray-800 mb-2 col-span-full">Generell Tilpasning</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="input-group"><label class="block text-sm mb-1">Antall kurser</label><input type="number" class="custom-courses-input w-full" min="0" placeholder="Standard"></div>
+                        <div class="input-group"><label class="block text-sm mb-1">Belysning (tak)</label><select class="custom-lighting-type-input w-full"><option value="default_ceiling_point">Takpunkt</option><option value="spotlights">Spotter i tak</option></select></div>
+                        <div class="hidden mt-2 space-y-2 custom-spotlight-options"><label class="block text-xs mb-1">Antall spotter</label><input type="number" class="custom-num-spotlights-input w-full" min="1" placeholder="Auto (1 pr. 4m²)"></div>
+                        <div class="input-group col-span-full"><label class="flex items-center text-sm"><input type="checkbox" class="custom-heating-cable-checkbox form-checkbox"><span class="ml-2">Ønsker varmekabel?</span></label><div class="hidden mt-2 custom-heating-power-wrapper"><label class="block text-xs">Effekt (W/m²)</label><input type="number" class="custom-heating-power-input w-full" min="0" step="10" value="100"></div></div>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-md font-semibold text-gray-800 mb-2">NEK 400 Kursdimensjonering</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="input-group"><label class="block text-sm mb-1">Vern (I<sub>n</sub>)</label><select class="dim-in-input w-full"><option value="">Velg</option><option value="10">10 A</option><option value="16" selected>16 A</option><option value="20">20 A</option><option value="25">25 A</option></select></div>
+                        <div class="input-group"><label class="block text-sm mb-1">Tverrsnitt</label><select class="dim-crosssection-input w-full"><option value="">Velg</option><option value="1.5">1.5 mm²</option><option value="2.5" selected>2.5 mm²</option><option value="4">4 mm²</option><option value="6">6 mm²</option></select></div>
+                        <div class="input-group"><label class="block text-sm mb-1">Leggemåte</label><select class="dim-installmethod-input w-full"><option value="">Velg</option><option value="A1">A1</option><option value="A2">A2</option><option value="C" selected>C</option></select></div>
+                        <div class="input-group"><label class="block text-sm mb-1">Omg.temp</label><select class="dim-temp-input w-full"><option value="20">20°C</option><option value="25">25°C</option><option value="30" selected>30°C</option><option value="35">35°C</option><option value="40">40°C</option></select></div>
+                        <div class="input-group"><label class="block text-sm mb-1"># samf. kurser</label><input type="number" class="dim-group-input w-full" value="1" min="1"></div>
+                        <div class="input-group"><label class="block text-sm mb-1">Kabellengde (m)</label><input type="number" class="dim-length-input w-full" value="15" min="1"></div>
+                        <div class="input-group col-span-full"><label class="block text-sm mb-1">Forankoblet impedans Z<sub>foran</sub> (mΩ)</label><input type="number" class="dim-zforan-input w-full" value="300" min="1"></div>
+                    </div>
+                </div>
+            </div>`;
+        roomsContainer.appendChild(wrapper);
+        attachRoomRowEventListeners(wrapper);
+    }
+    function attachRoomRowEventListeners(row) {
+        const roomTypeSelect = row.querySelector('.room-type-select');
+        const kitchenOptions = row.querySelector('.kitchen-options');
+        const kitchenLightingSelect = row.querySelector('.kitchen-lighting-select');
+        const kitchenSpotWrapper = row.querySelector('.kitchen-spot-quantity-wrapper');
+        roomTypeSelect.addEventListener('change', (e) => kitchenOptions.classList.toggle('hidden', e.target.value !== 'kjokken'));
+        kitchenLightingSelect.addEventListener('change', (e) => kitchenSpotWrapper.classList.toggle('hidden', e.target.value !== 'under_cabinet_spots'));
+        row.querySelector('.customize-room-checkbox').addEventListener('change', (e) => row.querySelector('.custom-options').classList.toggle('hidden', !e.target.checked));
+        row.querySelector('.custom-lighting-type-input').addEventListener('change', (e) => row.querySelector('.custom-spotlight-options').classList.toggle('hidden', e.target.value !== 'spotlights'));
+        row.querySelector('.custom-heating-cable-checkbox').addEventListener('change', (e) => row.querySelector('.custom-heating-power-wrapper').classList.toggle('hidden', !e.target.checked));
+        row.querySelector('.remove-room-btn').addEventListener('click', () => row.remove());
+    }
+
+    // SECTION 4: CALCULATION LOGIC
+    function getFormValues() {
+        return {
+            networkType: document.getElementById('networkType').value, mainFuse: parseInt(document.getElementById('mainFuse').value, 10), installationType: document.getElementById('installationType').value, includeNewFuseBox: document.getElementById('newFuseBoxCheck').checked, simultaneityFactor: parseFloat(document.getElementById('simultaneityFactor').value), profitMargin: parseFloat(document.getElementById('profitMargin').value) || 0, serviceCarFixedCost: parseFloat(document.getElementById('serviceCarFixedCost').value) || 0,
+            rates: { elektriker: parseFloat(document.getElementById('elektrikerRate').value) || 0, serviceleder: parseFloat(document.getElementById('serviceLeaderRate').value) || 0, bas: parseFloat(document.getElementById('elektrikerBasRate').value) || 0, lærling: parseFloat(document.getElementById('lærlingRate').value) || 0, },
+            fixedHours: { serviceleder: parseFloat(document.getElementById('serviceLeaderHours').value) || 0, bas: parseFloat(document.getElementById('elektrikerBasHours').value) || 0, lærling: parseFloat(document.getElementById('lærlingHours').value) || 0, },
+            projectName: document.getElementById('projectName').value || "Ukjent Prosjekt",
+        };
+    }
+    function processRooms(formVals) {
+        let totalConnectedLoad = 0, totalCourses = 0, aggregatedMaterials = {}, aggregatedLaborHours = {}, validationMessages = [], roomTypes = [];
+        const addMaterial = (desc, qty) => { if (!desc || isNaN(qty) || qty <= 0) return; const price = (config.materialPrices[desc] || 0); if (!aggregatedMaterials[desc]) aggregatedMaterials[desc] = { quantity: 0, unitPrice: price }; aggregatedMaterials[desc].quantity += qty; };
+        const addLabor = (op, qty) => { if (!op || isNaN(qty) || qty <= 0) return; const timePerUnit = (config.laborTimes[op] || 0); if (!aggregatedLaborHours[op]) aggregatedLaborHours[op] = { quantity: 0, timePerUnit: timePerUnit, totalHours: 0 }; aggregatedLaborHours[op].quantity += qty; aggregatedLaborHours[op].totalHours += qty * timePerUnit; };
+        document.querySelectorAll('#roomsContainer > div[data-room-id]').forEach((row, index) => {
+            const roomSelect = row.querySelector('.room-type-select');
+            const type = roomSelect.value;
+            if (type) { const roomDisplayName = roomSelect.options[roomSelect.selectedIndex].text; roomTypes.push(roomDisplayName); }
+            const area = parseFloat(row.querySelector('.room-area-input').value) || 0;
+            const roomName = `Rom ${index + 1} (${type || 'Udefinert'})`;
+            if (!type || area <= 0) { validationMessages.push({ type: 'error', message: `<strong>${roomName}:</strong> Har ugyldig romtype eller areal.` }); return; }
+            const standard = config.roomDefaults[type];
+            let roomCourses = standard.courses;
+            let currentRoomLoad = (standard.fixedLoad || 0) + area * (standard.loadPerM2 || 0);
+            (standard.materials || []).forEach(mat => addMaterial(mat.desc, mat.qty));
+            (standard.labor || []).forEach(lab => addLabor(lab.op, lab.qty));
+            if (type === 'kjokken') {
+                const lightingChoice = row.querySelector('.kitchen-lighting-select').value;
+                if (lightingChoice === 'led_strip') { addMaterial('LED-strip pakke', 1); } 
+                else if (lightingChoice === 'under_cabinet_spots') { const spotPackQty = parseInt(row.querySelector('.kitchen-spot-quantity-input').value, 10) || 1; addMaterial('Spotter under skap (3-pk)', spotPackQty); addLabor('Montering spotlight', spotPackQty * 3); }
+            }
+            const isCustom = row.querySelector('.customize-room-checkbox').checked;
+            if (isCustom) {
+                const customCoursesInput = row.querySelector('.custom-courses-input').value;
+                if (customCoursesInput) roomCourses = parseInt(customCoursesInput, 10) || standard.courses;
+                if (row.querySelector('.custom-heating-cable-checkbox').checked) { const heatingPower = parseFloat(row.querySelector('.custom-heating-power-input').value) || 100; if(heatingPower > 0) { currentRoomLoad += area * heatingPower; addMaterial('Varmekabelmatte (per m2)', area); addMaterial('Termostat for varmekabel', 1); addMaterial('Gulvføler for varmekabel', 1); addLabor('Legging varmekabelmatte (per m2)', area); addLabor('Montering termostat', 1); addLabor('Montering gulvføler', 1); roomCourses++; } }
+                const lightingType = row.querySelector('.custom-lighting-type-input').value;
+                if (lightingType === 'spotlights') { let numSpots = parseInt(row.querySelector('.custom-num-spotlights-input').value, 10) || Math.max(1, Math.ceil(area / 4)); addMaterial('Spotlight (standard)', numSpots); addLabor('Montering spotlight', numSpots); addMaterial('Dimmer (standard)', 1); addLabor('Montering dimmer', 1); } 
+                else { addMaterial('Lyspunkt tak (standard)', 1); addLabor('Montering lyspunkt', 1); addMaterial('Bryter 1-polet', 1); addLabor('Montering stikkontakt/bryter', 1); }
+                const dimData = { In: parseFloat(row.querySelector('.dim-in-input').value), crossSection: row.querySelector('.dim-crosssection-input').value, installMethod: row.querySelector('.dim-installmethod-input').value, temp: row.querySelector('.dim-temp-input').value, groupCount: parseInt(row.querySelector('.dim-group-input').value, 10) || 1, length: parseFloat(row.querySelector('.dim-length-input').value) || 15, zForan: parseFloat(row.querySelector('.dim-zforan-input').value) || 300 };
+                validationMessages.push(...validateCableDimensioning(dimData, roomName));
+            } else {
+                addMaterial('Lyspunkt tak (standard)', 1); addLabor('Montering lyspunkt', 1); addMaterial('Bryter 1-polet', 1); addLabor('Montering stikkontakt/bryter', 1);
+            }
+            let cableLengthForRoom;
+            if (isCustom) { cableLengthForRoom = parseFloat(row.querySelector('.dim-length-input').value) || ESTIMATED_CABLE_LENGTH_PER_COURSE; }
+            else { cableLengthForRoom = roomCourses * ESTIMATED_CABLE_LENGTH_PER_COURSE; }
+            if (formVals.installationType === 'concealed') { addMaterial('Ferdigtrukket K-rør 16mm 3G2.5 (per meter)', cableLengthForRoom); addLabor('Trekking kabel (skjult, per meter)', cableLengthForRoom); } 
+            else { addMaterial('Kabel PR 2x2.5/2.5 (per meter)', cableLengthForRoom); addMaterial('Festeklammer (pk a 100 stk)', Math.ceil(cableLengthForRoom / 30)); addLabor('Trekking kabel (åpen, per meter)', cableLengthForRoom); }
+            addMaterial('Jordfeilautomat 16A B (per kurs)', roomCourses); addLabor('Montering jordfeilautomat', roomCourses);
+            totalCourses += roomCourses; totalConnectedLoad += currentRoomLoad;
+        });
+        if (formVals.includeNewFuseBox) { addMaterial('Boligskap 2-rader m/målerplass', 1); addLabor('Montering/Utskifting av Sikringsskap', 1); }
+        if (totalCourses > 0) { addMaterial('Koblingsbokser/rør/klemmer (Prosjektbasis)', 1); addLabor('Tavlearbeid/kobling (Prosjektbasis)', 1); addLabor('Test og kontroll (Prosjektbasis)', 1); }
+        const uniqueRoomTypes = [...new Set(roomTypes)];
+        return { aggregatedMaterials, aggregatedLaborHours, totalCourses, totalConnectedLoad, validationMessages, uniqueRoomTypes };
+    }
+    function validateCableDimensioning(data, roomName) {
+        const { In, crossSection, installMethod, temp, groupCount, length, zForan } = data;
+        let messages = [], details = [];
+        if (!In || !crossSection || !installMethod) return [];
+        const I_ref = (NEK400_I_REF[crossSection] || {})[installMethod] || 0, k_temp = NEK400_K_TEMP[temp] || 1.0, k_gruppe = NEK400_K_GRUPPE[groupCount] || NEK400_K_GRUPPE['9'], Iz = I_ref * k_temp * k_gruppe, I2 = In * 1.45;
+        details.push(`<li><span class="font-semibold">Kapasitet (I<sub>z</sub>):</span> ${Iz.toFixed(1)} A</li>`);
+        if (In > Iz) details.push(`<li class="text-red-700">❌ Krav 1 FEILET: I<sub>n</sub> (${In} A) > I<sub>z</sub> (${Iz.toFixed(1)} A).</li>`); else details.push(`<li class="text-green-700">✅ Krav 1 OK: I<sub>n</sub> ≤ I<sub>z</sub>.</li>`);
+        if (I2 > 1.45 * Iz) details.push(`<li class="text-red-700">❌ Krav 2 FEILET: I₂ (${I2.toFixed(1)} A) > 1.45×I<sub>z</sub> (${(1.45 * Iz).toFixed(1)} A).</li>`); else details.push(`<li class="text-green-700">✅ Krav 2 OK: I₂ ≤ 1.45×I<sub>z</sub>.</li>`);
+        const voltageDropPercent = (2 * length * In * CABLE_RESISTIVITY_CU / parseFloat(crossSection)) / 230 * 100;
+        details.push(`<li><span class="font-semibold">Spenningsfall:</span> ${voltageDropPercent.toFixed(2)} %</li>`);
+        if (voltageDropPercent > VOLTAGE_DROP_LIMIT) details.push(`<li class="text-red-700">❌ Spenningsfall FEILET: > ${VOLTAGE_DROP_LIMIT}%.</li>`); else details.push(`<li class="text-green-700">✅ Spenningsfall OK.</li>`);
+        const ikMin = (0.95 * 230 * 1000) / (zForan + (2 * length * CABLE_RESISTIVITY_CU) / parseFloat(crossSection)), i5 = In * 5;
+        details.push(`<li><span class="font-semibold">Min. kortslutn.strøm (I<sub>k,min</sub>):</span> ${ikMin.toFixed(0)} A</li>`);
+        if (ikMin < i5) details.push(`<li class="text-red-700">❌ I<sub>k,min</sub> FEILET: ${ikMin.toFixed(0)} A < I₅ (${i5} A).</li>`); else details.push(`<li class="text-green-700">✅ I<sub>k,min</sub> OK.</li>`);
+        messages.push({ type: details.some(d => d.includes('❌')) ? 'error' : 'info', message: `<strong>${roomName} (NEK 400):</strong><ul class="list-disc list-inside mt-2 text-sm">${details.join('')}</ul>` });
+        return messages;
+    }
+    function calculateFinalCosts(processedData, formVals) {
+        let totalMaterialCost = 0; for (const desc in processedData.aggregatedMaterials) { totalMaterialCost += processedData.aggregatedMaterials[desc].quantity * processedData.aggregatedMaterials[desc].unitPrice; }
+        let totalElectricianHours = 0; for (const op in processedData.aggregatedLaborHours) { totalElectricianHours += processedData.aggregatedLaborHours[op].totalHours; }
+        const totalElectricianLaborCost = totalElectricianHours * formVals.rates.elektriker;
+        const serviceLeaderTotalCost = formVals.fixedHours.serviceleder * formVals.rates.serviceleder;
+        const elektrikerBasTotalCost = formVals.fixedHours.bas * formVals.rates.bas;
+        const lærlingTotalCost = formVals.fixedHours.lærling * formVals.rates.lærling;
+        const totalLaborCost = totalElectricianLaborCost + serviceLeaderTotalCost + elektrikerBasTotalCost + lærlingTotalCost;
+        const costPriceBeforeMargin = totalMaterialCost + totalLaborCost + formVals.serviceCarFixedCost;
+        const subTotalExVat = costPriceBeforeMargin * (1 + formVals.profitMargin / 100);
+        const finalGrandTotal = subTotalExVat * VAT_FACTOR;
+        return { 
+            ...formVals,
+            uniqueRoomTypes: processedData.uniqueRoomTypes,
+            totalPowerDemand: processedData.totalConnectedLoad * formVals.simultaneityFactor, 
+            totalCourses: processedData.totalCourses,
+            costPriceBeforeMargin, subTotalExVat, finalGrandTotal,
+            totalMaterialCost, totalElectricianHours, totalElectricianLaborCost, 
+            serviceLeaderTotalCost, elektrikerBasTotalCost, lærlingTotalCost,
+        };
+    }
+    function performFinalValidation(summary) {
+        const mainFuseCapacityW = (summary.networkType === '230IT' ? 230 : 400) * summary.mainFuse * (summary.networkType === '400TN' ? Math.sqrt(3) : 1);
+        if (summary.totalPowerDemand > mainFuseCapacityW) return [{ type: 'error', message: `<strong>HOVEDSIKRING OVERBELASTET!</strong> Effektbehov (${(summary.totalPowerDemand/1000).toFixed(1)} kW) > Kapasitet (${(mainFuseCapacityW/1000).toFixed(1)} kW).` }];
+        if (summary.totalCourses > 0) return [{ type: 'info', message: `<strong>Hovedsikring OK:</strong> Effektbehov (${(summary.totalPowerDemand/1000).toFixed(1)} kW) ≤ Kapasitet (${(mainFuseCapacityW/1000).toFixed(1)} kW).` }];
+        return [];
+    }
+    
+    // SECTION 5: DISPLAY, EXPORT & EVENT LISTENERS
+    function displayResults({ summary, materials, labor, messages }) {
+        resultsContainer.classList.remove('hidden');
+        const validationContainer = document.getElementById('validationMessages');
+        validationContainer.innerHTML = '';
+        messages.forEach(msg => { const div = document.createElement('div'); div.className = `validation-message ${msg.type}`; div.innerHTML = msg.message; validationContainer.appendChild(div); });
+        const formatNOK = (val) => (val || 0).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' });
+        document.getElementById('resNetworkType').textContent = summary.networkType || 'N/A';
+        document.getElementById('resMainFuse').textContent = summary.mainFuse || 'N/A';
+        document.getElementById('resPowerDemand').textContent = summary.totalPowerDemand ? (summary.totalPowerDemand / 1000).toFixed(1) : 'N/A';
+        document.getElementById('resTotalCourses').textContent = summary.totalCourses || 'N/A';
+        const materialBody = document.getElementById('materialTableBody'); materialBody.innerHTML = '';
+        Object.keys(materials).sort().forEach(desc => { const item = materials[desc]; materialBody.insertRow().innerHTML = `<td class="px-4 py-4 align-top">${desc}</td><td class="px-4 py-4 align-top text-center">${item.quantity.toFixed(0)}</td><td class="px-4 py-4 align-top hidden md:table-cell">${item.unit || 'stk'}</td><td class="px-4 py-4 align-top hidden md:table-cell text-right">${formatNOK(item.unitPrice)}</td><td class="px-4 py-4 align-top text-right font-semibold">${formatNOK(item.quantity * item.unitPrice)}</td>`; });
+        document.getElementById('resTotalMaterialCost').textContent = formatNOK(summary.totalMaterialCost);
+        const laborBody = document.getElementById('laborTableBody'); laborBody.innerHTML = '';
+        Object.keys(labor).sort().forEach(op => { const item = labor[op]; laborBody.insertRow().innerHTML = `<td class="px-4 py-4 align-top">${op}</td><td class="px-4 py-4 align-top hidden md:table-cell text-center">${item.quantity.toFixed(0)}</td><td class="px-4 py-4 align-top hidden md:table-cell text-center">${item.timePerUnit.toFixed(2)}</td><td class="px-4 py-4 align-top text-right font-semibold">${item.totalHours.toFixed(2)}</td>`; });
+        document.getElementById('resTotalLaborHours').textContent = `${(summary.totalElectricianHours || 0).toFixed(2)} timer`;
+        document.getElementById('resTotalMaterialCostBreakdown').textContent = formatNOK(summary.totalMaterialCost);
+        document.getElementById('resElectricianCostBreakdown').textContent = formatNOK(summary.totalElectricianLaborCost);
+        document.getElementById('resServiceLeaderCostLabel').textContent = `Arbeid - Serviceleder (${summary.fixedHours.serviceleder}t):`;
+        document.getElementById('resServiceLeaderCostBreakdown').textContent = formatNOK(summary.serviceLeaderTotalCost);
+        document.getElementById('resBasCostLabel').textContent = `Arbeid - Elektriker Bas (${summary.fixedHours.bas}t):`;
+        document.getElementById('resBasCostBreakdown').textContent = formatNOK(summary.elektrikerBasTotalCost);
+        document.getElementById('resLærlingCostLabel').textContent = `Arbeid - Lærling (${summary.fixedHours.lærling}t):`;
+        document.getElementById('resLærlingCostBreakdown').textContent = formatNOK(summary.lærlingTotalCost);
+        document.getElementById('resServiceCarCostBreakdown').textContent = formatNOK(summary.serviceCarFixedCost);
+        document.getElementById('resCostPriceBeforeMargin').textContent = formatNOK(summary.costPriceBeforeMargin);
+        document.getElementById('resGrandTotal').textContent = formatNOK(summary.finalGrandTotal);
+        const vatAmount = summary.finalGrandTotal - summary.subTotalExVat;
+        document.getElementById('resVatBreakdown').innerHTML = `(hvorav MVA utgjør ${formatNOK(vatAmount)}), Pris eks. mva: <strong>${formatNOK(summary.subTotalExVat)}</strong>`;
+    }
+    function exportToCsv() {
+        if (!lastCalculationResult) { alert("Kjør en kalkulering først."); return; }
+        const { summary, materials, labor } = lastCalculationResult;
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Prosjektsammendrag\r\n";
+        csvContent += `Prosjektnavn;${summary.projectName}\r\n`;
+        csvContent += `Total Estimert Kostnad (NOK);${summary.finalGrandTotal.toFixed(2)}\r\n\r\n`;
+        csvContent += "Materielliste\r\nBeskrivelse;Antall;Enhetspris;Totalpris\r\n";
+        Object.entries(materials).forEach(([key, item]) => { csvContent += `${key};${item.quantity.toFixed(2)};${item.unitPrice.toFixed(2)};${(item.quantity * item.unitPrice).toFixed(2)}\r\n`; });
+        csvContent += `\r\nTimeliste\r\nOperasjon;Total timer\r\n`;
+        Object.entries(labor).forEach(([key, item]) => { csvContent += `${key};${item.totalHours.toFixed(2)}\r\n`; });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.href = encodedUri; link.download = `${summary.projectName}_kalkyle.csv`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+    function exportToInternalPdf() {
+        if (!lastCalculationResult) { alert("Kjør en kalkulering først."); return; }
+        const { summary, materials, labor } = lastCalculationResult;
+        const doc = new jsPDF();
+        const formatNOK = (val) => (val || 0).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' });
+        doc.setFontSize(18); doc.text(`Intern Kalkyle for: ${summary.projectName}`, 14, 22);
+        doc.autoTable({ startY: 30, head: [['Sammendrag', 'Verdi']], body: [ ['Total Estimert Kostnad', formatNOK(summary.finalGrandTotal)], ['Antall Kurser', summary.totalCourses], ['Samtidig Effekt', `${(summary.totalPowerDemand / 1000).toFixed(1)} kW`], ] });
+        doc.autoTable({ startY: doc.autoTable.previous.finalY + 10, head: [['Materiell', 'Antall', 'Enhetspris', 'Totalpris']], body: Object.keys(materials).sort().map(key => [key, materials[key].quantity.toFixed(0), formatNOK(materials[key].unitPrice), formatNOK(materials[key].quantity * materials[key].unitPrice)]) });
+        doc.autoTable({ startY: doc.autoTable.previous.finalY + 10, head: [['Arbeidsoperasjon', 'Estimert tid (timer)']], body: Object.keys(labor).sort().map(key => [key, labor[key].totalHours.toFixed(2)]) });
+        doc.save(`InternKalkyle_${summary.projectName.replace(/ /g, '_')}.pdf`);
+    }
+    function generateCustomerQuotePdf() {
+        if (!lastCalculationResult) { alert("Kjør en kalkulering først."); return; }
+        const { summary, materials } = lastCalculationResult;
+        const doc = new jsPDF();
+        const formatNOK = (val) => (val || 0).toLocaleString('no-NO', { style: 'currency', currency: 'NOK' });
+        doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.text('Bravida Norge AS, avd. Orkanger', 14, 20);
+        doc.setFont('helvetica', 'normal'); doc.text('Grønørveien 18, 7300 Orkanger', 14, 25); doc.text('Telefon: 72 47 99 00', 14, 30);
+        doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.text('TILBUD', 200, 35, { align: 'right' });
+        const today = new Date(); const quoteId = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}-${String(today.getHours()).padStart(2, '0')}${String(today.getMinutes()).padStart(2, '0')}`;
+        doc.setFontSize(10);
+        doc.autoTable({ startY: 45, theme: 'plain', body: [['Tilbud til:', summary.projectName], ['Tilbudsnr:', quoteId], ['Dato:', today.toLocaleDateString('no-NO')]], styles: { fontSize: 10 }, columnStyles: { 0: { fontStyle: 'bold' } } });
+        let currentY = doc.autoTable.previous.finalY;
+        doc.setFontSize(11); currentY += 10; doc.text('Takk for muligheten til å gi et tilbud på elektrisk installasjon for ditt prosjekt.', 14, currentY);
+        currentY += 10; doc.setFont('helvetica', 'bold'); doc.text('Arbeidet omfatter følgende rom:', 14, currentY);
+        doc.setFont('helvetica', 'normal'); currentY += 6; doc.text(summary.uniqueRoomTypes.join(', '), 14, currentY);
+        doc.autoTable({ startY: currentY + 10, head: [['Beskrivelse av materiell', 'Antall']], body: Object.keys(materials).sort().map(key => [key, materials[key].quantity.toFixed(0)]), headStyles: { fillColor: [0, 83, 148] } });
+        const vatAmount = summary.finalGrandTotal - summary.subTotalExVat;
+        doc.autoTable({ startY: doc.autoTable.previous.finalY + 10, theme: 'grid', body: [['Sum materiell og arbeid eks. mva', { content: formatNOK(summary.subTotalExVat), styles: { halign: 'right' } }], ['Merverdiavgift (25%)', { content: formatNOK(vatAmount), styles: { halign: 'right' } }]], foot: [[{ content: 'Totalbeløp å betale inkl. mva', styles: { fontStyle: 'bold' } }, { content: formatNOK(summary.finalGrandTotal), styles: { halign: 'right', fontStyle: 'bold' } }]], styles: { fontSize: 11 }, footStyles: { fillColor: [230, 244, 255], textColor: [0, 83, 148], fontStyle: 'bold' } });
+        const pageHeight = doc.internal.pageSize.height;
+        doc.setFontSize(9); doc.setTextColor(150);
+        doc.text('Forbehold og betingelser:', 14, pageHeight - 30);
+        doc.text('- Tilbudet er gyldig i 30 dager fra tilbudsdato.', 14, pageHeight - 25);
+        doc.text('- Betalingsvilkår er 14 dager netto.', 14, pageHeight - 20);
+        doc.text('- Eventuelle endringer eller tilleggsarbeid vil bli fakturert etter medgått tid og materiell.', 14, pageHeight - 15);
+        doc.save(`Tilbud_${summary.projectName.replace(/ /g, '_')}.pdf`);
+    }
+
+    // Main event listener
+    calculationForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        try {
+            const formVals = getFormValues();
+            const processedData = processRooms(formVals);
+            const summary = calculateFinalCosts(processedData, formVals);
+            const finalMessages = performFinalValidation(summary);
+            lastCalculationResult = { 
+                summary, 
+                materials: processedData.aggregatedMaterials, 
+                labor: processedData.aggregatedLaborHours, 
+                messages: [...processedData.validationMessages, ...finalMessages] 
+            };
+            displayResults(lastCalculationResult);
+            window.scrollTo({ top: document.getElementById('results').offsetTop, behavior: 'smooth' });
+        } catch (error) {
+            console.error("En feil oppstod under kalkulering:", error);
+            alert("En uventet feil oppstod. Sjekk konsollen for detaljer (F12).");
+        }
+    });
+
+    // Other listeners
+    editDataBtn.addEventListener('click', () => { populateDataModal(); dataModal.classList.remove('hidden'); });
+    closeDataModalBtn.addEventListener('click', () => dataModal.classList.add('hidden'));
+    saveDataBtn.addEventListener('click', saveDataFromModal);
+    resetDataBtn.addEventListener('click', resetDataToDefaults);
+    addRoomBtn.addEventListener('click', addRoomRow);
+    document.getElementById('saveProjectBtn').addEventListener('click', () => alert('Lagring er ikke fullt implementert i denne demoen.'));
+    document.getElementById('loadProjectBtn').addEventListener('click', () => alert('Lasting er ikke fullt implementert i denne demoen.'));
+    document.getElementById('exportCsvBtn').addEventListener('click', exportToCsv);
+    document.getElementById('exportPdfBtn').addEventListener('click', exportToInternalPdf);
+    document.getElementById('generateQuoteBtn').addEventListener('click', generateCustomerQuotePdf);
+    
+    // Init
+    loadDataFromStorage();
+    addRoomRow();
+});
+</script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/bravida-kalkulator/sw.js')
+                .then(registration => console.log('Service Worker er registrert!'))
+                .catch(err => console.log('Registrering av Service Worker feilet:', err));
+        });
+    }
+</script>
+
+</body>
+</html>
