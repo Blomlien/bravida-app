@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bravida | NEK 400 Kalkulatoren Pro v8.0 (Final)</title>
     
-    <link rel="manifest" href="/bravida-kalkulator/manifest.json">
+    <link rel="manifest" href="/bravida-app/manifest.json">
     
     <meta name="theme-color" content="#005394"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/bravida-kalkulator/sw.js')
+            navigator.serviceWorker.register('/bravida-app/sw.js')
                 .then(registration => console.log('Service Worker er registrert!'))
                 .catch(err => console.log('Registrering av Service Worker feilet:', err));
         });

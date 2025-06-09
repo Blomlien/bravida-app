@@ -2,13 +2,13 @@
   "name": "Bravida Prosjektkalkulator Pro",
   "short_name": "Kalkulator",
   "description": "Et internt verktøy for estimering av elektriske installasjoner basert på NEK 400.",
-  "start_url": "/bravida-kalkulator/index.html",
+  "start_url": "/bravida-app/index.html",
   "display": "standalone",
   "background_color": "#f8f8f8",
   "theme_color": "#005394",
   "icons": [
     {
-      "src": "/bravida-kalkulator/icons/icon-512x512.png",
+      "src": "/bravida-app/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

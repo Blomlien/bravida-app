@@ -1,10 +1,10 @@
-const CACHE_NAME = 'bravida-kalkulator-v2'; // Endret til v2 for å tvinge en oppdatering
+const CACHE_NAME = 'bravida-app-v1'; // Nytt cachenavn
 
-// ENDRET "HANDLELISTEN" MED FULLE FILSTIER
+// Oppdatert "handleliste" med fulle filstier for bravida-app
 const ASSETS_TO_CACHE = [
-  '/bravida-kalkulator/index.html',
-  '/bravida-kalkulator/manifest.json',
-  '/bravida-kalkulator/icons/icon-512x512.png'
+  '/bravida-app/index.html',
+  '/bravida-app/manifest.json',
+  '/bravida-app/icons/icon-512x512.png'
 ];
 
 // Installasjons-event: Cacher de grunnleggende filene
